@@ -1,0 +1,37 @@
+[
+  {
+    "id": 3,
+    "description": "Coffee",
+    "amount": 120,
+    "category": "food",
+    "date": "2026-10-01"
+  },
+  {
+    "id": 4,
+    "description": "Lunch",
+    "amount": 250,
+    "category": "food",
+    "date": "2026-10-01"
+  },
+  {
+    "id": 5,
+    "description": "Uber",
+    "amount": 180,
+    "category": "transport",
+    "date": "2026-10-01"
+  },
+  {
+    "id": 6,
+    "description": "Lunch",
+    "amount": 250,
+    "category": "food",
+    "date": "2026-10-01"
+  },
+  {
+    "id": 7,
+    "description": "Lunch",
+    "amount": 250,
+    "category": "food",
+    "date": "2026-10-01"
+  }
+]
