@@ -1,18 +1,23 @@
 {
-  "name": "expense-tracker",
+  "name": "cli-expense-tracker",
   "version": "1.0.0",
   "description": "A CLI expense tracker built with Node.js",
   "main": "src/index.js",
-  "scripts": {
-    "start": "node src/index.js"
-  },
   "bin": {
     "expense": "./src/index.js"
   },
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "keywords": [
+    "cli",
+    "expense",
+    "expense-tracker",
+    "nodejs"
+  ],
+  "author": "",
   "license": "MIT",
   "dependencies": {
-    "chalk": "^4.1.2",
-    "cli-table3": "^0.6.5",
-    "commander": "^15.0.0"
+    "commander": "^14.0.0"
   }
 }

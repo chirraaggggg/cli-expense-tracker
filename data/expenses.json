@@ -68,5 +68,26 @@
     "amount": 120,
     "category": "food",
     "date": "2026-10-02"
+  },
+  {
+    "id": 13,
+    "description": "Lunch",
+    "amount": 250,
+    "category": "food",
+    "date": "2026-10-02"
+  },
+  {
+    "id": 14,
+    "description": "Uber",
+    "amount": 180,
+    "category": "transport",
+    "date": "2026-10-02"
+  },
+  {
+    "id": 15,
+    "description": "Dinner",
+    "amount": 400,
+    "category": "food",
+    "date": "2026-10-02"
   }
 ]

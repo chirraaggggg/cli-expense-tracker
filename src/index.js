@@ -5,10 +5,17 @@ const { Command } = require("commander");
 const {
   addExpense,
   listExpenses,
-  deleteExpense,
   updateExpense,
+  deleteExpense,
   getSummary,
 } = require("./expenseManager");
+
+const {
+  setBudget,
+  listBudgets,
+  deleteBudget,
+  getBudgetStatus,
+} = require("./budgetManager");
 
 const program = new Command();
 
@@ -17,7 +24,10 @@ program
   .description("A simple CLI expense tracker")
   .version("1.0.0");
 
-// ADD
+// ============================================
+// ADD EXPENSE
+// ============================================
+
 program
   .command("add")
   .description("Add a new expense")
@@ -43,7 +53,7 @@ program
       );
 
       console.log(
-        `Expense added successfully. ID: ${expense.id}`
+        `✓ Expense added successfully. ID: ${expense.id}`
       );
     } catch (error) {
       console.error(`Error: ${error.message}`);
@@ -51,10 +61,13 @@ program
     }
   });
 
-// LIST
+// ============================================
+// LIST EXPENSES
+// ============================================
+
 program
   .command("list")
-  .description("List all expenses")
+  .description("List expenses")
   .option(
     "--category <category>",
     "Filter by category"
@@ -82,7 +95,8 @@ program
           ID: expense.id,
           Date: expense.date || "Unknown",
           Description: expense.description,
-          Category: expense.category || "other",
+          Category:
+            expense.category || "other",
           Amount: `₹${expense.amount}`,
         }))
       );
@@ -100,7 +114,10 @@ program
     }
   });
 
-// UPDATE
+// ============================================
+// UPDATE EXPENSE
+// ============================================
+
 program
   .command("update")
   .description("Update an expense")
@@ -142,7 +159,7 @@ program
       );
 
       console.log(
-        `Expense #${expense.id} updated successfully.`
+        `✓ Expense #${expense.id} updated successfully.`
       );
     } catch (error) {
       console.error(`Error: ${error.message}`);
@@ -150,7 +167,10 @@ program
     }
   });
 
-// DELETE
+// ============================================
+// DELETE EXPENSE
+// ============================================
+
 program
   .command("delete")
   .description("Delete an expense")
@@ -160,10 +180,12 @@ program
   )
   .action((options) => {
     try {
-      const expense = deleteExpense(options.id);
+      const expense = deleteExpense(
+        options.id
+      );
 
       console.log(
-        `Deleted expense #${expense.id}: ${expense.description}`
+        `✓ Deleted expense #${expense.id}: ${expense.description}`
       );
     } catch (error) {
       console.error(`Error: ${error.message}`);
@@ -171,7 +193,10 @@ program
     }
   });
 
+// ============================================
 // SUMMARY
+// ============================================
+
 program
   .command("summary")
   .description("Show expense summary")
@@ -204,7 +229,10 @@ program
       if (categories.length === 0) {
         console.log("No expenses found.");
       } else {
-        for (const [category, amount] of categories) {
+        for (const [
+          category,
+          amount,
+        ] of categories) {
           console.log(
             `${category.padEnd(15)} ₹${amount}`
           );
@@ -212,6 +240,136 @@ program
       }
 
       console.log();
+
+      // Budget status
+      const budgetStatus =
+        getBudgetStatus();
+
+      if (budgetStatus.length > 0) {
+        console.log("Budgets:\n");
+
+        for (const status of budgetStatus) {
+          const percentage =
+            status.budget > 0
+              ? Math.round(
+                  (status.spent /
+                    status.budget) *
+                    100
+                )
+              : 0;
+
+          console.log(
+            `${status.category.padEnd(15)} ₹${status.spent} / ₹${status.budget} (${percentage}%)`
+          );
+
+          if (status.exceeded) {
+            console.log(
+              `                ⚠ Over budget by ₹${Math.abs(
+                status.remaining
+              )}`
+            );
+          } else {
+            console.log(
+              `                ₹${status.remaining} remaining`
+            );
+          }
+        }
+
+        console.log();
+      }
+    } catch (error) {
+      console.error(`Error: ${error.message}`);
+      process.exitCode = 1;
+    }
+  });
+
+// ============================================
+// BUDGET COMMAND
+// ============================================
+
+const budget = program
+  .command("budget")
+  .description("Manage expense budgets");
+
+// SET BUDGET
+
+budget
+  .command("set")
+  .description("Set or update a category budget")
+  .requiredOption(
+    "--category <category>",
+    "Budget category"
+  )
+  .requiredOption(
+    "--amount <amount>",
+    "Budget amount"
+  )
+  .action((options) => {
+    try {
+      const result = setBudget(
+        options.category,
+        options.amount
+      );
+
+      console.log(
+        `✓ Budget set successfully.`
+      );
+
+      console.log(
+        `${result.category}: ₹${result.amount}/month`
+      );
+    } catch (error) {
+      console.error(`Error: ${error.message}`);
+      process.exitCode = 1;
+    }
+  });
+
+// LIST BUDGETS
+
+budget
+  .command("list")
+  .description("List all budgets")
+  .action(() => {
+    try {
+      const budgets = listBudgets();
+
+      if (budgets.length === 0) {
+        console.log("No budgets found.");
+        return;
+      }
+
+      console.log("\nBudgets\n");
+
+      console.table(
+        budgets.map((item) => ({
+          Category: item.category,
+          Budget: `₹${item.amount}`,
+        }))
+      );
+    } catch (error) {
+      console.error(`Error: ${error.message}`);
+      process.exitCode = 1;
+    }
+  });
+
+// DELETE BUDGET
+
+budget
+  .command("delete")
+  .description("Delete a category budget")
+  .requiredOption(
+    "--category <category>",
+    "Budget category"
+  )
+  .action((options) => {
+    try {
+      const deleted = deleteBudget(
+        options.category
+      );
+
+      console.log(
+        `✓ Deleted ${deleted.category} budget.`
+      );
     } catch (error) {
       console.error(`Error: ${error.message}`);
       process.exitCode = 1;
