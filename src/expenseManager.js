@@ -22,7 +22,7 @@ function addExpense(description, amount, category = "other") {
     id: nextId,
     description: description.trim(),
     amount,
-    category,
+    category: category.trim().toLowerCase(),
     date: new Date().toISOString().split("T")[0],
   };
 
@@ -38,22 +38,31 @@ function listExpenses(filters = {}) {
   if (filters.category) {
     expenses = expenses.filter(
       (expense) =>
+        expense.category &&
         expense.category.toLowerCase() ===
-        filters.category.toLowerCase()
+          filters.category.toLowerCase()
     );
   }
 
-  if (filters.month) {
+  if (filters.month !== undefined) {
     const month = Number(filters.month);
 
-    if (!Number.isInteger(month) || month < 1 || month > 12) {
+    if (
+      !Number.isInteger(month) ||
+      month < 1 ||
+      month > 12
+    ) {
       throw new Error("Month must be between 1 and 12");
     }
 
     expenses = expenses.filter((expense) => {
       if (!expense.date) return false;
 
-      return Number(expense.date.split("-")[1]) === month;
+      const expenseMonth = Number(
+        expense.date.split("-")[1]
+      );
+
+      return expenseMonth === month;
     });
   }
 
@@ -108,7 +117,12 @@ function updateExpense(id, updates) {
   }
 
   if (updates.category !== undefined) {
-    expense.category = updates.category;
+    if (!updates.category.trim()) {
+      throw new Error("Category cannot be empty");
+    }
+
+    expense.category =
+      updates.category.trim().toLowerCase();
   }
 
   saveExpenses(expenses);
@@ -117,9 +131,7 @@ function updateExpense(id, updates) {
 }
 
 function getSummary(month) {
-  const expenses = getExpenses();
-
-  let filtered = expenses;
+  let expenses = getExpenses();
 
   if (month !== undefined) {
     const monthNumber = Number(month);
@@ -132,25 +144,38 @@ function getSummary(month) {
       throw new Error("Month must be between 1 and 12");
     }
 
-    filtered = expenses.filter((expense) => {
-      if (!expense.date) {
-        return false;
-      }
+    expenses = expenses.filter((expense) => {
+      if (!expense.date) return false;
 
-      const expenseMonth = Number(expense.date.split("-")[1]);
+      const expenseMonth = Number(
+        expense.date.split("-")[1]
+      );
 
       return expenseMonth === monthNumber;
     });
   }
 
-  const total = filtered.reduce(
+  const total = expenses.reduce(
     (sum, expense) => sum + Number(expense.amount),
     0
   );
 
+  const byCategory = {};
+
+  for (const expense of expenses) {
+    const category = expense.category || "other";
+
+    if (!byCategory[category]) {
+      byCategory[category] = 0;
+    }
+
+    byCategory[category] += Number(expense.amount);
+  }
+
   return {
-    count: filtered.length,
+    count: expenses.length,
     total,
+    byCategory,
   };
 }
 

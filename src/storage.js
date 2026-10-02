@@ -5,7 +5,7 @@ const DATA_FILE = path.join(__dirname, "../data/expenses.json");
 
 function getExpenses() {
   if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(DATA_FILE, "[]");
+    fs.writeFileSync(DATA_FILE, "[]", "utf8");
   }
 
   const data = fs.readFileSync(DATA_FILE, "utf8");

@@ -33,5 +33,40 @@
     "amount": 250,
     "category": "food",
     "date": "2026-10-01"
+  },
+  {
+    "id": 8,
+    "description": "Lunch",
+    "amount": 250,
+    "category": "food",
+    "date": "2026-10-02"
+  },
+  {
+    "id": 9,
+    "description": "Uber",
+    "amount": 180,
+    "category": "transport",
+    "date": "2026-10-02"
+  },
+  {
+    "id": 10,
+    "description": "Lunch",
+    "amount": 250,
+    "category": "food",
+    "date": "2026-10-02"
+  },
+  {
+    "id": 11,
+    "description": "Uber",
+    "amount": 180,
+    "category": "transport",
+    "date": "2026-10-02"
+  },
+  {
+    "id": 12,
+    "description": "Coffee",
+    "amount": 120,
+    "category": "food",
+    "date": "2026-10-02"
   }
 ]
