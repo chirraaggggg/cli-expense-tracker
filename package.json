@@ -1,13 +1,14 @@
 {
   "name": "cli-expense-tracker",
   "version": "1.0.0",
-  "description": "A CLI expense tracker built with Node.js",
+  "description": "A production-ready command-line expense tracker with analytics, budgets, reports, and import/export",
   "main": "src/index.js",
   "bin": {
     "expense": "./src/index.js"
   },
   "scripts": {
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "test": "node --test"
   },
   "keywords": [
     "cli",

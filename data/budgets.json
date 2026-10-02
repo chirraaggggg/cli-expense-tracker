@@ -2,5 +2,11 @@
   {
     "category": "food",
     "amount": 10000
+  },
+  {
+    "category": "food",
+    "amount": 5000,
+    "month": 10,
+    "year": 2026
   }
 ]

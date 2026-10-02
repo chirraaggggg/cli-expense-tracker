@@ -1,211 +1,90 @@
-const {
-  getExpenses,
-  saveExpenses,
-} = require("./storage");
+const { getExpenses, saveExpenses } = require("./storage");
+const { filterExpenses, sortExpenses } = require("./filters");
+const { validateAmount, validateId, validateDate, validateExpense } = require("./validation");
 
-function validateAmount(amount) {
-  const value = Number(amount);
-
-  if (!Number.isFinite(value) || value <= 0) {
-    throw new Error("Amount must be greater than 0");
-  }
-
-  return value;
-}
-
-function validateMonth(month) {
-  const value = Number(month);
-
-  if (
-    !Number.isInteger(value) ||
-    value < 1 ||
-    value > 12
-  ) {
-    throw new Error("Month must be between 1 and 12");
-  }
-
-  return value;
-}
-
-function addExpense(
-  description,
-  amount,
-  category = "other"
-) {
-  if (!description || !description.trim()) {
-    throw new Error("Description is required");
-  }
-
-  const validatedAmount = validateAmount(amount);
-
-  if (!category || !category.trim()) {
-    category = "other";
-  }
-
+function addExpense(description, amount, category = "other", date = new Date().toISOString().slice(0, 10)) {
+  if (typeof description !== "string" || !description.trim()) throw new Error("Description is required");
+  if (typeof category !== "string" || !category.trim()) throw new Error("Category is required");
+  validateDate(date);
   const expenses = getExpenses();
-
-  const nextId =
-    expenses.length === 0
-      ? 1
-      : Math.max(
-          ...expenses.map((expense) => Number(expense.id))
-        ) + 1;
-
-  const expense = {
-    id: nextId,
-    description: description.trim(),
-    amount: validatedAmount,
-    category: category.trim().toLowerCase(),
-    date: new Date().toISOString().split("T")[0],
-  };
-
-  expenses.push(expense);
-
-  saveExpenses(expenses);
-
+  const nextId = expenses.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1;
+  const expense = validateExpense({ id: nextId, description, amount: validateAmount(amount), category, date });
+  saveExpenses([...expenses, expense]);
   return expense;
 }
 
 function listExpenses(filters = {}) {
-  let expenses = getExpenses();
-
-  if (filters.category) {
-    expenses = expenses.filter(
-      (expense) =>
-        expense.category &&
-        expense.category.toLowerCase() ===
-          filters.category.toLowerCase()
-    );
-  }
-
-  if (filters.month !== undefined) {
-    const month = validateMonth(filters.month);
-
-    expenses = expenses.filter((expense) => {
-      if (!expense.date) {
-        return false;
-      }
-
-      const expenseMonth = Number(
-        expense.date.split("-")[1]
-      );
-
-      return expenseMonth === month;
-    });
-  }
-
-  return expenses;
+  return sortExpenses(filterExpenses(getExpenses(), filters), filters.sort);
 }
 
 function updateExpense(id, updates) {
+  const numericId = validateId(id);
   const expenses = getExpenses();
-
-  const expense = expenses.find(
-    (item) => item.id === Number(id)
-  );
-
-  if (!expense) {
-    throw new Error(`Expense with ID ${id} not found`);
-  }
-
-  if (updates.description !== undefined) {
-    if (!updates.description.trim()) {
-      throw new Error("Description cannot be empty");
-    }
-
-    expense.description =
-      updates.description.trim();
-  }
-
-  if (updates.amount !== undefined) {
-    expense.amount = validateAmount(
-      updates.amount
-    );
-  }
-
-  if (updates.category !== undefined) {
-    if (!updates.category.trim()) {
-      throw new Error("Category cannot be empty");
-    }
-
-    expense.category =
-      updates.category.trim().toLowerCase();
-  }
-
+  const index = expenses.findIndex((item) => Number(item.id) === numericId);
+  if (index === -1) throw new Error(`Expense with ID ${id} not found`);
+  const current = expenses[index];
+  const next = {
+    ...current,
+    ...(updates.description !== undefined ? { description: updates.description } : {}),
+    ...(updates.amount !== undefined ? { amount: validateAmount(updates.amount) } : {}),
+    ...(updates.category !== undefined ? { category: updates.category } : {}),
+  };
+  if (typeof next.description !== "string" || !next.description.trim()) throw new Error("Description cannot be empty");
+  if (typeof next.category !== "string" || !next.category.trim()) throw new Error("Category cannot be empty");
+  expenses[index] = validateExpense(next);
   saveExpenses(expenses);
-
-  return expense;
+  return expenses[index];
 }
 
 function deleteExpense(id) {
+  const numericId = validateId(id);
   const expenses = getExpenses();
-
-  const index = expenses.findIndex(
-    (expense) => expense.id === Number(id)
-  );
-
-  if (index === -1) {
-    throw new Error(`Expense with ID ${id} not found`);
-  }
-
-  const deleted = expenses.splice(index, 1)[0];
-
+  const index = expenses.findIndex((item) => Number(item.id) === numericId);
+  if (index === -1) throw new Error(`Expense with ID ${id} not found`);
+  const [deleted] = expenses.splice(index, 1);
   saveExpenses(expenses);
-
   return deleted;
 }
 
-function getSummary(month) {
-  let expenses = getExpenses();
+function deleteExpenses(filters) {
+  const expenses = getExpenses();
+  const matches = filterExpenses(expenses, filters);
+  if (!matches.length) throw new Error("No expenses found for the supplied filters");
+  const ids = new Set(matches.map((item) => Number(item.id)));
+  saveExpenses(expenses.filter((item) => !ids.has(Number(item.id))));
+  return matches;
+}
 
-  if (month !== undefined) {
-    const monthNumber = validateMonth(month);
+function clearExpenses() {
+  const expenses = getExpenses();
+  saveExpenses([]);
+  return expenses.length;
+}
 
-    expenses = expenses.filter((expense) => {
-      if (!expense.date) {
-        return false;
-      }
-
-      const expenseMonth = Number(
-        expense.date.split("-")[1]
-      );
-
-      return expenseMonth === monthNumber;
-    });
-  }
-
-  const total = expenses.reduce(
-    (sum, expense) =>
-      sum + Number(expense.amount),
-    0
-  );
-
+function summarize(expenses) {
+  const amounts = expenses.map((item) => Number(item.amount));
+  const total = amounts.reduce((sum, amount) => sum + amount, 0);
   const byCategory = {};
-
   for (const expense of expenses) {
-    const category =
-      expense.category || "other";
-
-    if (!byCategory[category]) {
-      byCategory[category] = 0;
-    }
-
-    byCategory[category] += Number(
-      expense.amount
-    );
+    const category = expense.category || "other";
+    byCategory[category] = (byCategory[category] || 0) + Number(expense.amount);
   }
-
   return {
     count: expenses.length,
     total,
+    average: expenses.length ? total / expenses.length : 0,
+    largest: expenses.length ? Math.max(...amounts) : 0,
+    smallest: expenses.length ? Math.min(...amounts) : 0,
     byCategory,
   };
 }
 
-module.exports = {
-  addExpense,
-  listExpenses,
-  updateExpense,
-  deleteExpense,
-  getSummary,
-};
+function getSummary(filters = {}) {
+  return summarize(filterExpenses(getExpenses(), typeof filters === "object" ? filters : { month: filters }));
+}
+
+function getStats(filters = {}) {
+  return getSummary(filters);
+}
+
+module.exports = { addExpense, listExpenses, updateExpense, deleteExpense, deleteExpenses, clearExpenses, getSummary, getStats, summarize };
